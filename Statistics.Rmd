@@ -1,0 +1,685 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+This Markdown file includes the subjects below:
+
+
+1. Single sample T Test
+2. One-Sample Proportion Test 
+3. Two sample T Test  (A/B Test)
+4. Paired-samples T Test
+5. Proportional A/B Test
+6. One way analysis of Variance (ANOVA)
+7. Correlation
+
+# What you can learn from this document?
+
+1. You will find real world problems and solutuons with hypothesis testing. 
+2. You will also see what are the assumptions for implementing a hypothesis test and how to evaluate assumptions.
+3. Also you will see how the evaluate the outputs. I wrote every single step seperately to make it clearly understandable.
+
+So let's start with the first one.
+
+
+# 1.Single sample T Test
+## 1.1. Problem
+
+Assume that we have a website. And according to google analytics data, people who open our webpage stays here avarage 170 seconds.
+But we don't believe that and do hypothesis test to figure it out. Since it is a continious variable we shuold put forward a hypothesis. We believe it is less than 170 seconds. So we want to decline H0 hypothesis which is m >=170.
+
+
+Hypothesis
+
+H0: M  >= 170  
+H1: M  <  170
+
+## 1.2 Data Set
+
+```{r}
+#This is our dataset
+measurements <- c(17, 160, 234, 149, 145, 107, 197, 75, 201, 225, 211, 119, 
+              157, 145, 127, 244, 163, 114, 145,  65, 112, 185, 202, 146,
+              203, 224, 203, 114, 188, 156, 187, 154, 177, 95, 165, 50, 110, 
+              216, 138, 151, 166, 135, 155, 84, 251, 173, 131, 207, 121, 120)
+
+summary(measurements)
+
+```
+Mean value is 154.4
+
+# Parametric tests
+We use this test if: 
+1- number of sample more than 30, 
+2- there is normal distribution in the dataset
+3- sample should be quantitative.
+4- Tests are carried out on average
+
+## 1.3. Assumption Check : How to measure normal distribution? 
+```{r}
+#1. Histogram gives us a good understanding of distribution.
+hist(measurements)
+#It looks like a normally distributed dataset. But we continue to get more proof about normally distributed data.
+```
+
+
+```{r}
+#2. Q-Q plot (or quantile-quantile plot) 
+#  I expect the dots to move along the line.
+library(ggpubr)
+ggqqplot(measurements)
+```
+This is what i expected. We have 2 proof now.
+
+```{r}
+# Now 
+#3. Shapiro-Wilks
+shapiro.test(measurements)
+
+```
+H0 says theorical and sample distributions has no difference.  
+If p> 0.05 that means we can not reject H0 hyphothesis.
+Now, i can say we have a normally distributed data and continue to hyphothesis test.
+
+
+## 1.4.Hyphothesis Test
+
+```{r}
+#We need the mean value of the sample to implement the test.
+summary(measurements)
+```
+
+
+```{r}
+# mu = the limit number
+# alternative hyphothesis = less than 170
+# Confidence level is 0.95. Because alpha = 0.05
+t.test(measurements, mu = 170, alternative = "less", conf.level = 0.95)
+```
+# One sample t-test result are above.
+# p-value is less than 0.05. Then it measn we decline H0 hypothesis. As a result of hypothesis the total time that customers spent on web site is not more than 170 seconds. 
+
+
+# Now, i will do the same process with alternative function.
+## 1.5 Alternative Function
+```{r}
+#install.packages("inferr")
+library(inferr)
+df <- data.frame(measurements)
+infer_os_t_test(df, measurements, mu = 170, type = all)
+```
+This fuction gives us the same information with the previous one. But this one has more information. I use this function if i need more information.
+
+
+
+## 1.6. Nonparametric tests
+We use this function if: 
+1- number of sample less than 30, 
+2- there is no normal distribution in tha dataset
+3- sample has heterogenius data.
+Our dataset is parametric but i will write the function just to see the output as a sample. Normally i shouldn't apply this dataset to nonparametric test.
+```{r}
+#install.packages("DescTools")
+library(DescTools)
+SignTest(df$measurements) 
+
+```
+This tests are carried out on average. Because this is a nonparametric test.
+Remember that the previous tests was carried out on mean value.
+
+
+# 2. One-Sample Proportion Test 
+The One-Sample Proportion Test is used to assess whether a population proportion (P1) is significantly different from a hypothesized value (P0). ... This procedure calculates sample size and statistical power for testing a single proportion using either the exact test or other approximate z-tests
+
+## 2.1 Problem
+
+## 2.2 Dataset
+
+Assume that 500 people cliked on advertisements on a website. 
+40 of them bought something thanks to the advertisements.
+Proportion: 40/500 = 0,08
+
+## 2.3 Assumption
+
+n > 30
+
+## 2.4 Hypothesis test
+```{r}
+# 
+prop.test(x = 40, n = 500, p = 0.05, alternative = "two.sided") # alternatiive hypothesis is covers all the values other than 0.05 as we write "two.sided"
+```
+We rejected H0 = 0.05 hypothesis.This output tells us alternative hypothesis is True.
+Confidence interval is between 0.058 and 0.108. 
+
+
+```{r}
+# Now, let<s see when i write "greater" for alternative hypothesis
+prop.test(x = 40, n = 500, p = 0.05, alternative = "greater")
+```
+p value is less than 0.05, so i rejected H0 hypothesis.
+
+
+```{r}
+# Now, let<s see wwhen i write "less" for alternative hypothesis
+prop.test(x = 40, n = 500, p = 0.05, alternative = "less")
+```
+p value is greater than 0.05, so i can not rejected H0 hypothesis.
+I can say the proportion is less than 0.05.
+
+
+
+# 3. Two sample T Test  (A/B Test)
+
+## 3.1. Problem
+
+Hypothesis?
+
+H0: M1  =  M2
+H1: M1 !=  M2
+
+
+## 3.2. Dataset
+
+Assume that we have two datasets. First dataset has the data about a web site sales.
+Then we made some changes on this website to boost the sales. After collecting enough data,
+we want to understand if the changes we made to boost the sales is really succesful.
+Now i will compare these datasets.We use Two sample T test for this kind of problems to compare datasets and see confidence intervals.
+
+A and B are our datasets. A is the dataset before the change. And B is the dataset after the change.
+```{r}
+two_sample_data <- data.frame(
+  
+  A = c(30,27,21,27,29,30,20,20,27,32,35,22,24,23,25,27,23,27,23,
+        25,21,18,24,26,33,26,27,28,19,25), # the sales before the web site change
+  
+  B = c(37,39,31,31,34,38,30,36,29,28,38,28,37,37,30,32,31,31,27,
+        32,33,33,33,31,32,33,26,32,33,29) # the sales after the web site change
+)
+```
+
+
+```{r}
+#install.packages("funModeling")
+library(funModeling)
+
+profiling_num(two_sample_data)
+```
+ 
+There is a significant difference between mean values of A and B dataset. That means the second dataset sales are higher. Keep in mind this data and collect some more proof.
+
+Std dev shows how much variation there is from the average (mean). A low SD indicates that the data points tend to be close to the mean, whereas a high SD indicates that the data are spread out over a large range of values. Here B dataset has better SD value. It also supports B dataset has better sales.
+
+
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+
+# to visualize this data with boxplot i should  reorganize the dataset first. A and B should be at the same column and the sales should be at the same column.
+
+# We probably get these A and B values seperately in real life.
+# Let's collect all sales prices in a column and collect all 'sales' values in another column
+A <- data.frame(prices = two_sample_data$A, sales = "A")
+B <- data.frame(prices = two_sample_data$B, sales = "B")
+AB <- rbind(A,B)
+```
+
+
+```{r}
+# Now, i can visualize it
+ggplot(AB, aes(sales, prices, fill = sales)) + 
+  geom_boxplot()
+# As you see in the graph the B sales are higher than A sales.
+```
+
+
+## 3.3. Assumption check
+We have 2 assumptions.
+1- The assumption of Normality: Assumption of normality means that you should make sure your data roughly fits a bell curve shape before running certain statistical tests or regression. 
+2- The assumption of Homogenity of variance: The assumption of homogeneity of variance is that the variance within each of the populations is equal.
+
+### 3.3.1. The assumption of Normality 
+
+```{r}
+ggplot(AB, aes(prices, fill = sales)) +
+  geom_histogram(color = "black", binwidth = 5, alpha = 0.5) +
+  facet_grid(sales ~.)
+```
+Normality of datasets looks good.
+The distributuon of B sales are at higher values
+
+```{r}
+# Density function 
+ggplot(AB, aes(prices, fill = sales)) +
+  geom_histogram(aes(y = ..density..), color = "black", binwidth = 5, alpha = 0.5) +
+  geom_density(alpha = 0.3) +
+  facet_grid(sales ~.)
+```
+
+
+```{r}
+#numeric test 
+apply(two_sample_data, 2, shapiro.test) # if two dataset come to you seperately you can use this code.
+```
+P values are greater than 0.05. That means both datasets has normality.
+
+```{r}
+# if two dataset come to you seperately you should do this test seperately for a and B datasets
+AB[AB$sales == "A",]$prices
+
+shapiro.test(AB[AB$sales == "A",]$prices)
+```
+P value of A is greater than 0.05. A dataset has normality.
+
+Now let's do the same thing for B dataset.
+```{r}
+AB[AB$sales == "B",]$prices
+
+shapiro.test(AB[AB$sales == "B",]$prices)
+```
+P value of B is greater than 0.05. B dataset has also normality.
+Now, i can say both datasets has the normality. First assumption is met.
+
+### 3.3.2. The assumption of Homogenity of variance 
+Now look at second assumption.
+```{r}
+#install.packages("car")
+
+library(car)
+leveneTest(AB$prices ~ AB$sales, center = mean)
+```
+H0 hypothesis says that both A and B variances has the same value.
+We can not reject H0 hypothesis because of P value > 0.05. That means two datasets have variance homogenity. Second assumption are met also.
+
+If these assumptions are not met, we continue with nonparametric test.
+
+But this time assumptions met and we continue with parametric test.
+We can start the hypothesis test as both assumptions are met.
+
+## 3.4. Hypothesis test
+```{r}
+
+t.test(AB$prices~AB$sales, var.equal = TRUE) # if variance homogenity is OK we should write var.equal = TRUE in this function. Otherwise t.test calculates as it has no variance homogenity.
+
+```
+# Conclusion:
+P value is pretty low.We rejected H0 hypothesis. That means our sales after the web page change has increased. Group B is better than group A. 
+
+
+
+## 3.5 Alternative Function for detailed statistics
+```{r}
+# This function calculate both cases: when variances are equal and not equal.
+infer_ts_ind_ttest(data = AB, x = sales, y = prices)
+
+```
+ Test for Equality of Variances says we can not reject  the hypothesis that says "there are no difference between variances"
+
+## 3.6 Nonparametric   Mann - Whitney U
+
+Assume that The assumption of Normality and  The assumption of Homogenity of variance is not met.
+That means we have nonparametric datasets. In this situation we should use the function below.
+```{r}
+
+wilcox.test(two_sample_data$A,two_sample_data$B )
+
+```
+H0: Mean1 = Mean2 is rejected. Because P value is too low.
+
+
+# 4. Paired-samples T Test
+
+## 4.1. Problem
+
+Hypothesis?
+
+H0: M0  =  MS
+H1: M0 !=  MS
+
+## 4.2 Data set
+
+Assume that we want our sales personnel to increase their sales amount.We trained out personnel with a highly cost training program. And we want to understand if the training has a positive effect on sales of the personnel.
+We selected 40 personnel and we have their sales data of 6 months before the training and 6 months after the training.
+Now, we will compare the datas statistically.
+
+```{r}
+before_training <- c(123,119,119,116,123,123,121,120,117,118,121,121,123,119,
+            121,118,124,121,125,115,115,119,118,121,117,117,120,120,
+            121,117,118,117,123,118,124,121,115,118,125,115)
+
+after_training <- c(118,127,122,132,129,123,129,132,128,130,128,138,140,130,
+             134,134,124,140,134,129,129,138,134,124,122,126,133,127,
+             130,130,130,132,117,130,125,129,133,120,127,123)
+
+
+A <- data.frame(mean_sales = before_training, BEFORE_AFTER = "BEFORE")
+B <- data.frame(mean_sales = after_training, BEFORE_AFTER = "AFTER")
+# mean_sales variable is the 6 months avarage sales amount.
+
+before_after <- rbind(A,B)
+
+before_after
+
+profiling_num(before_after)
+```
+We couldn't see the sales grouped by before and after. This data doesn't mean something to us.
+Let's see the sales before and after the training with the code below.
+
+```{r}
+before_after %>% 
+  group_by(BEFORE_AFTER) %>%
+  summarise(mean(mean_sales),sd(mean_sales), var(mean_sales))
+```
+
+
+```{r}
+ggplot(before_after, aes(BEFORE_AFTER, mean_sales)) +
+  geom_boxplot()
+```
+According to the graph above it looks the trainings has positive effect on sales of the company.
+Let's get some more proof about that.
+
+
+## 4.3 Assumption of Normality
+```{r}
+
+apply(data.frame(before_training, after_training), 2, shapiro.test)
+
+```
+P value is greater than 0.05. The data has normality.
+
+## 4.4 Hypothesis Test
+```{r}
+t.test(before_after$mean_sales ~ before_after$BEFORE_AFTER, paired = TRUE)
+
+```
+P value is pretty low. That means we reject H0 hypothesis. 
+
+Conclusion of hypothesis test:
+The sales after the training has increased statistically with %95 confidence interval.
+
+Yes, we made some investment on our personnel and it definitely worth it.
+
+
+
+## 4.5 Use this function for Nonparametric dataset ( use if assumption of normality is not verified): Wilcoxon Sign-Rank
+```{r}
+
+wilcox.test(df$before_training, df$after_training, paired = TRUE)  #paired= TRUE means that they are dependent variables
+
+```
+P value is pretty low. That means we reject H0 hypothesis. 
+
+
+# 5.  Proportional A/B Test
+
+## 5.1 Problem
+
+Assume that we have an online sale website. We want to change the color of the "BUY" button.
+We want to understand if color effects the color or not.
+
+## 5.2 Data set
+
+We have two different observation dataset.
+
+Green button: 300 clicks 1000 Views
+Red button: 250 clicks 1100 Views
+
+## 5.3 Assumption
+
+Number of observations should be more than 30.
+n>30
+
+## 5.4 Hypothesis Test
+```{r}
+
+prop.test(x = c(300, 250), n = c(1000, 1100))
+
+```
+We reject H0 hypothesis because P value is less than 0.05
+These two proportions has statistically significant difference.
+That means green button makes customers do more shopping.
+
+
+
+
+# 6. One way analysis of Variance (ANOVA)
+
+We use this when we want to compare mean of more than two groups.
+
+## 6.1 Problem
+
+Assume that we have a website. We want to increase the time that customers spend at the main page. We will put 3 different contents at different times to attract customers attention. And then we will compare them.
+
+Hypothesis?
+
+H0: M1 = M2 = M3 (Statistically there is no significant difference between group means)
+H1: There are difference between groups
+
+## 6.2 Data Sets
+
+In real life projects you most likely get these datasets seperately. 
+So i am creating seperate datasets to show how you can bind these datasets for using them at analysis and hypothesis testing purposes..
+
+```{r}
+# A: Total time in seconds that customer spent on maimpage when we put content A.
+A <- c(28,33,30,29,28,29,27,31,30,32,28,33,25,29,27,31,31,30,31,34,30,32,31,34,28,32,31,28,33,29)
+# B: Total time in seconds that customer spent on maimpage when we put content B.
+B <- c(31,32,30,30,33,32,34,27,36,30,31,30,38,29,30,34,34,31,35,35,33,30,28,29,26,37,31,28,34,33)
+# C: Total time in seconds that customer spent on maimpage when we put content C.
+C <- c(40,33,38,41,42,43,38,35,39,39,36,34,35,40,38,36,39,36,33,35,38,35,40,40,39,38,38,43,40,42)
+
+
+A <- data.frame( Time_spent= A, GROUP = "A")
+
+B <- data.frame(Time_spent = B, GROUP = "B")
+
+C <- data.frame(Time_spent = C, GROUP = "C")
+
+
+info <- rbind(A,B)
+
+info <- rbind(info, C)
+head(info)
+```
+
+When we group them and calculate mean, median and std_dv, it will give us a good idea about datasets.
+```{r}
+info %>% group_by(GROUP) %>%
+  summarise(mean(Time_spent), median(Time_spent), sd(Time_spent))
+```
+C content has the biggest mean time and median value. 
+It seems like the best content to increase the time spending on website.
+
+
+```{r}
+ggplot(info, aes(GROUP, Time_spent, fill = GROUP)) +
+  geom_boxplot()
+```
+Apparently it ssems from the graph C content attract the customers attention most.
+
+
+## 6.3 Assumption 
+
+### 6.3.1. Normality
+
+```{r}
+shapiro.test(info[info$GROUP == "A",]$Time_spent)
+```
+P value is greater than 0.05, so we confirmed normality.
+
+```{r}
+shapiro.test(info[info$GROUP == "B",]$Time_spent)
+
+```
+P value is greater than 0.05 then we confirmed normality.
+
+```{r}
+shapiro.test(info[info$GROUP == "C",]$Time_spent)
+```
+P value is greater than 0.05 then we confirmed normality.
+
+### 6.3.2. Homogenity of variance test
+H0 : Variance1 = Variance2 =Variance3
+H0 : Variances are different
+
+```{r}
+
+bartlett.test(Time_spent ~ GROUP, data = info)
+
+# use the code below if normality is violated or if you have concerns about normality.
+# leveneTest(Time_spent ~ GROUP, data = info)
+
+```
+P value is greater than 0.05 then we can not reject H0 hypothesis.
+We confirmed the homogenity of variance.
+
+Both assumptions are confirmed.
+
+
+## 6.4 Hypothesis Test
+```{r}
+
+aov(Time_spent ~ GROUP, data = info)
+
+summary(aov(Time_spent ~ GROUP, data = info))
+
+```
+P value is less than 0.05. We rejected H0 hypothesis and go on with H1 hypothesis.
+
+H0: M1 = M2 = M3 (Statistically there is no significant difference between group means)
+H1: There are difference between groups
+
+Which group makes the difference? To figure it out we will compare them with each other.
+
+
+## 6.5 Compare two by two
+```{r}
+
+TukeyHSD(aov(Time_spent ~ GROUP, data = info))
+
+```
+All groups has difference with each other according to the table above.
+When we visualised it above we saw mean of A and B are so close to each other. But here we can see they are also different.
+
+
+## 6.7 Nonparametric Function: Kruskal-Wallis H
+Use this function when assumptioans are not met. Othervise we should not use it
+```{r}
+
+kruskal.test(Time_spent ~ GROUP, info)
+```
+
+
+
+# 7. Correlation
+Correlation is a statistic that measures the degree to which two variables move in relation to each other.
+
+## 7.1 Problem
+THere are a lot of peaple selling something.. We want to find out if there is a relationship between sales amount and avarage rating of sellers.
+
+## 7.2 Dataset
+
+```{r}
+df <- mtcars
+head(df)
+
+library(ggpubr)
+ggscatter(df, x = "mpg", y ="wt", # y= dependent variable, x = independent variable
+          add = "reg.line", #regression line
+          conf.int = TRUE, 
+          cor.coef = TRUE, 
+          cor.method = "pearson")
+
+```
+As you see from the graph above there is a negative correlation (-0.87) between mpg and wt. variables. We can say the relationship between them is significant.
+
+
+## 7.3 Assumption
+Assumption of normality
+```{r}
+
+shapiro.test(df$mpg)
+shapiro.test(df$wt)
+
+```
+P values of both variables are greater than 0.05, so we confirmed assumption of normality.
+
+
+## 7.4 Hypothesis Testi and Test Statistics
+```{r}
+# We can test the correlation and test statistics between two variables by using the function below.
+cor.test(df$wt, df$mpg, method = "pearson")
+
+```
+There is strong negative relationship between variables as it is -0.86.
+P value is less than 0.05. That means relationship between the variables are significant.
+
+## 7.5 For Nonparametric datasets
+Use this function when assumptioan of normality is not met. Othervise we should not use it.
+
+```{r}
+cor.test(df$mpg, df$wt, method = "kendall")
+```
+
+
+## 7.6 Korelasyon Matrisi
+```{r}
+cor(df) # this function ignores missing values. That is why if dataset has missing values we should use the function below. Also we do noy see p Values with this function.
+```
+
+
+```{r}
+cor(df, use = "complete.obs") # this function calculates with only complete observations.
+```
+
+Use this function if you want to see P values.
+```{r}
+library(Hmisc)
+
+rcorr(as.matrix(df))  
+```
+I P value is close to 0, that means correlation between variables are high.
+
+
+## 7.7 Gelismis Korelasyon Matrisi
+
+```{r}
+
+install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
+
+df <- mtcars[, c(1,3,4,5,6,7)]
+
+chart.Correlation(df, histogram = TRUE, pch = 19)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
